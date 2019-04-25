@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE muclient>
-<!-- Saved on Wednesday, March 20, 2019, 10:53 PM -->
+<!-- Saved on Wednesday, April 24, 2019, 8:36 PM -->
 <!-- MuClient version 4.94 -->
 <!-- Written by Nick Gammon -->
 <!-- Home Page: http://www.mushclient.com/ -->
@@ -8,7 +8,7 @@
 <world
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
 
    auto_say_override_prefix="-"
    auto_say_string="say "
@@ -19,6 +19,7 @@
    mapping_failure="Alas, you cannot go that way."
    name="Achaea"
    new_activity_sound="(No sound)"
+   omit_date_from_save_files="y"
    output_font_name="FixedSys"
    script_editor="notepad"
    script_editor_argument="%file"
@@ -115,8 +116,33 @@
 <triggers
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="^You (?:pick|scoop) up (\d+) gold sovereigns\.$"
+   name="GoldTrackerCount"
+   regexp="y"
+   send_to="12"
+   sequence="90"
+  >
+  <send>if goldtracker.enabled then goldtracker.plus (tonumber ("%1"), true) end</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="You have slain *"
+   name="GoldTrackerSlainYou"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.prepare = true</send>
+  </trigger>
   <trigger
    enabled="y"
    group="prompt"
@@ -135,6 +161,73 @@ InfoClear()
 -- Replace with new slick prompt
 Info("%1h %2m %3e %4w %5")</send>
   </trigger>
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="^(\w+) tells you, &quot;Gold (?:count|report)\.&quot;$"
+   name="GoldTrackerAnnounceTells"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.announce("%1")</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="^.+ has been slain by (\w+)\.$"
+   name="GoldTrackerSlainParty"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>if goldtracker.names[string.lower("%1")] then
+  goldtracker.prepare = true
+end -- if</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="^You give (\d+) gold sovereigns to (\w+)\.$"
+   name="GoldDistributed"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.distributed (string.lower("%2"), tonumber ("%1"))</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="^\(Party\): (\w+) says, &quot;Gold (?:count|report)\.&quot;$"
+   name="GoldTrackerAnnouncePt"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.announce ("party", "%1")</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   group="goldtracker"
+   ignore_case="y"
+   keep_evaluating="y"
+   match="spills? from the corpse.$"
+   name="GoldTrackkerGold"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.pickup = goldtracker.prepare</send>
+  </trigger>
 </triggers>
 
 <!-- aliases -->
@@ -142,8 +235,118 @@ Info("%1h %2m %3e %4w %5")</send>
 <aliases
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
+  <alias
+   name="GoldTrackerDisplay"
+   match="^\s*gold(?:tracker)?\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.display()</send>
+  </alias>
+  <alias
+   name="GoldTrackerAdd"
+   match="^\s*gold(?:tracker)?\s*(add|remove|pause|unpause)\s+([A-Za-z]+)\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker[string.lower("%1")] ("%2")</send>
+  </alias>
+  <alias
+   name="GoldTrackerToggle"
+   match="^\s*gold(?:tracker)?\s*(on|off)\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.toggle("%1")</send>
+  </alias>
+  <alias
+   name="GoldTrackerPlusMinus"
+   match="^\s*gold(?:tracker)?\s*(plus|minus)\s+(\d+)\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker[string.lower("%1")] ("%2")</send>
+  </alias>
+  <alias
+   name="GoldTrackerDistribute"
+   match="^\s*gold(?:tracker)?\s*distribute\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.distribute()</send>
+  </alias>
+  <alias
+   name="GoldTrackerHelp"
+   match="^\s*gold(?:tracker)?\s*help\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.help()</send>
+  </alias>
+  <alias
+   name="GoldTrackerReport"
+   match="^\s*gold(?:tracker)?\s*report\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.announce ("party", gmcp.Char.Status.name:lower ())</send>
+  </alias>
+  <alias
+   name="GoldTrackerReset"
+   match="^\s*gold(?:tracker)?\s*reset\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.reset()</send>
+  </alias>
+  <alias
+   name="GoldTrackerSetOrg"
+   match="^\s*gold(?:tracker)?\s*set\s+(\w+)\s+(\d+)\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.setorg (string.lower("%1"), tonumber ("%2"))</send>
+  </alias>
+  <alias
+   name="GoldTrackerUnsetOrg"
+   match="^\s*gold(?:tracker)?\s*unset\s*$"
+   enabled="y"
+   group="goldtracker"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>goldtracker.unsetorg()</send>
+  </alias>
   <alias
    script="handle_GMCP"
    match="^handle_GMCP (.*?)=(.*)$"
@@ -162,7 +365,7 @@ Info("%1h %2m %3e %4w %5")</send>
 <timers
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
 </timers>
 
@@ -171,7 +374,7 @@ Info("%1h %2m %3e %4w %5")</send>
 <macros
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
 
   <macro name="up" type="send_now" >
@@ -265,7 +468,7 @@ Info("%1h %2m %3e %4w %5")</send>
 <variables
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
 </variables>
 
@@ -274,7 +477,7 @@ Info("%1h %2m %3e %4w %5")</send>
 <colours
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
 
 <ansi>
@@ -331,7 +534,7 @@ Info("%1h %2m %3e %4w %5")</send>
 <keypad
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
 
   <key name="0" >
@@ -445,7 +648,7 @@ Info("%1h %2m %3e %4w %5")</send>
 <printing
    muclient_version="4.94"
    world_file_version="15"
-   date_saved="2019-03-20 22:53:27"
+   date_saved="2019-04-24 20:36:05"
   >
 
 <ansi>
@@ -476,5 +679,4 @@ Info("%1h %2m %3e %4w %5")</send>
 <include name="GMCP_to_world.xml" plugin="y" />
 <include name="LuaAudio.xml" plugin="y" />
 <include name="MushReader.xml" plugin="y" />
-<include name="C:\Users\andrew\Downloads\GDMC512.xml" plugin="y" />
 </muclient>
